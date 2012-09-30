@@ -32,8 +32,10 @@ void MYAfterDelay( NSTimeInterval delay, void (^block)() ) {
         // Can't just call the block directly, because then it won't be running under the control
         // of the operation queue when it's called. So instead, create another block that tells
         // the queue to run the block, then run that...
+        
+        void (^aBlock)() = block;
         block = ^{
-            [queue addOperationWithBlock: block];
+            [queue addOperationWithBlock:aBlock];
         };
         if (delay > 0) {
             dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC));
@@ -44,7 +46,7 @@ void MYAfterDelay( NSTimeInterval delay, void (^block)() ) {
     } else
 #endif
     {
-        block = [[block copy] autorelease];
+        block = [block copy];
         [block performSelector: @selector(my_run_as_block)
                     withObject: nil
                     afterDelay: delay];
@@ -52,7 +54,7 @@ void MYAfterDelay( NSTimeInterval delay, void (^block)() ) {
 }
 
 id MYAfterDelayInModes( NSTimeInterval delay, NSArray* modes, void (^block)() ) {
-    block = [[block copy] autorelease];
+    block = [block copy];
     [block performSelector: @selector(my_run_as_block)
                 withObject: nil
                 afterDelay: delay
@@ -73,7 +75,6 @@ void MYOnThread( NSThread* thread, void (^block)()) {
                   onThread: thread
                 withObject: block
              waitUntilDone: NO];
-    [block release];
 }
 
 

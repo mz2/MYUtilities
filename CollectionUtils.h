@@ -26,7 +26,9 @@
 
 // Apply a selector to each array element, returning an array of the results:
 // (See also -[NSArray my_map:], which is more general but requires block support)
+#if !__has_feature(objc_arc) // can leak under ARC
 NSArray* $apply( NSArray *src, SEL selector, id defaultValue );
+#endif
 NSArray* $applyKeyPath( NSArray *src, NSString *keyPath, id defaultValue );
 
 
@@ -70,8 +72,11 @@ BOOL kvRemoveFromSet( id owner, NSString *property, NSMutableSet *set, id objToR
 
 @interface NSArray (MYUtils)
 - (BOOL) my_containsObjectIdenticalTo: (id)object;
+#if !__has_feature(objc_arc)
+// present implementations can leak under ARC (init, copy etc methods return a +1 retain count object)
 - (NSArray*) my_arrayByApplyingSelector: (SEL)selector;
 - (NSArray*) my_arrayByApplyingSelector: (SEL)selector withObject: (id)object;
+#endif
 #if NS_BLOCKS_AVAILABLE
 - (NSArray*) my_map: (id (^)(id obj))block;
 - (NSArray*) my_filter: (int (^)(id obj))block;

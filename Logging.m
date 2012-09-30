@@ -73,32 +73,32 @@ static void InitLogging()
     if( _gShouldLog != -1 )
         return;
 
-    NSAutoreleasePool *pool = [NSAutoreleasePool new];
-    _gShouldLog = NO;
-    sEnabledDomains = [[NSMutableSet alloc] init];
-    NSDictionary *dflts = [[NSUserDefaults standardUserDefaults] dictionaryRepresentation];
-    for( NSString *key in dflts ) {
-        if( [key hasPrefix: @"Log"] ) {
-            BOOL value = [[NSUserDefaults standardUserDefaults] boolForKey: key];
-            if( key.length==3 )
-                _gShouldLog = value;
-            else if( value ) {
-                key = [key substringFromIndex: 3]; // trim 'Log'
-                [sEnabledDomains addObject: key];
-                if (key.length > 7 && [key hasSuffix: @"Verbose"]) {
-                    key = [key substringToIndex: key.length - 7]; // trim 'Verbose'
+    @autoreleasepool {
+        _gShouldLog = NO;
+        sEnabledDomains = [[NSMutableSet alloc] init];
+        NSDictionary *dflts = [[NSUserDefaults standardUserDefaults] dictionaryRepresentation];
+        for( __strong NSString *key in dflts ) {
+            if( [key hasPrefix: @"Log"] ) {
+                BOOL value = [[NSUserDefaults standardUserDefaults] boolForKey: key];
+                if( key.length==3 )
+                    _gShouldLog = value;
+                else if( value ) {
+                    key = [key substringFromIndex: 3]; // trim 'Log'
                     [sEnabledDomains addObject: key];
+                    if (key.length > 7 && [key hasSuffix: @"Verbose"]) {
+                        key = [key substringToIndex: key.length - 7]; // trim 'Verbose'
+                        [sEnabledDomains addObject: key];
+                    }
                 }
             }
         }
+        sLoggingTo = getLoggingMode(STDERR_FILENO);
+        
+        Log(@"Logging mode %i enabled in domains: {%@}", 
+            sLoggingTo,
+            [[[sEnabledDomains allObjects] sortedArrayUsingSelector: @selector(caseInsensitiveCompare:)] 
+                    componentsJoinedByString: @", "]);
     }
-    sLoggingTo = getLoggingMode(STDERR_FILENO);
-    
-    Log(@"Logging mode %i enabled in domains: {%@}", 
-        sLoggingTo,
-        [[[sEnabledDomains allObjects] sortedArrayUsingSelector: @selector(caseInsensitiveCompare:)] 
-                componentsJoinedByString: @", "]);
-    [pool drain];
 }
 
 
@@ -139,27 +139,24 @@ BOOL _EnableLogTo( NSString *domain, BOOL enable )
 static void _Logv( NSString *prefix, NSString *msg, va_list args )
 {
     if( sLoggingTo > kLoggingToOther ) {
-        NSAutoreleasePool *pool = [NSAutoreleasePool new];
-        static NSDateFormatter *sTimestampFormat;
-        if( ! sTimestampFormat ) {
-            sTimestampFormat = [[NSDateFormatter alloc] init];
-            sTimestampFormat.dateFormat = @"HH:mm:ss.SSS";
+        @autoreleasepool {
+            static NSDateFormatter *sTimestampFormat;
+            if( ! sTimestampFormat ) {
+                sTimestampFormat = [[NSDateFormatter alloc] init];
+                sTimestampFormat.dateFormat = @"HH:mm:ss.SSS";
+            }
+            NSDate *now = [[NSDate alloc] init];
+            NSString *timestamp = [sTimestampFormat stringFromDate: now];
+            NSString *separator = prefix.length ?@": " :@"";
+            msg = [[NSString alloc] initWithFormat: msg arguments: args];
+            NSString *prefixColor = (prefix==kWarningPrefix) ?COLOR(91) :COLOR(93);
+            NSString *msgColor = (prefix==kWarningPrefix) ?@"" :COLOR(0);
+            NSString *finalMsg = [[NSString alloc] initWithFormat: @"%@%@| %@%@%@%@%@\n", 
+                                  COLOR(36),timestamp,
+                                  prefixColor,prefix,separator,
+                                  msgColor,msg];
+            fputs([finalMsg UTF8String], stderr);
         }
-        NSDate *now = [[NSDate alloc] init];
-        NSString *timestamp = [sTimestampFormat stringFromDate: now];
-        [now release];
-        NSString *separator = prefix.length ?@": " :@"";
-        msg = [[NSString alloc] initWithFormat: msg arguments: args];
-        NSString *prefixColor = (prefix==kWarningPrefix) ?COLOR(91) :COLOR(93);
-        NSString *msgColor = (prefix==kWarningPrefix) ?@"" :COLOR(0);
-        NSString *finalMsg = [[NSString alloc] initWithFormat: @"%@%@| %@%@%@%@%@\n", 
-                              COLOR(36),timestamp,
-                              prefixColor,prefix,separator,
-                              msgColor,msg];
-        fputs([finalMsg UTF8String], stderr);
-        [finalMsg release];
-        [msg release];
-        [pool drain];
     } else {
         if( prefix.length )
             msg = $sprintf(@"%@: %@", prefix,msg);

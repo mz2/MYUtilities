@@ -37,7 +37,6 @@ void MYReportException( NSException *x, NSString *where, ... )
     Warn(@"Exception caught in %@:\n\t%@\n%@",where,x,x.my_callStack);
     if( sExceptionReporter )
         sExceptionReporter(x);
-    [where release];
 }
 
 
@@ -92,7 +91,7 @@ void MYReportException( NSException *x, NSString *where, ... )
         while ((length = fread( buffer, 1, sizeof( buffer ), file ) ))
             [output appendBytes: buffer length: length];
         pclose( file );
-        NSString *outStr = [[[NSString alloc] initWithData: output encoding: NSUTF8StringEncoding] autorelease];
+        NSString *outStr = [[NSString alloc] initWithData: output encoding: NSUTF8StringEncoding];
         
         NSString *line;
         foreach( line, [outStr componentsSeparatedByString: @"\n"] ) {

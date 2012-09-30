@@ -25,7 +25,6 @@ static NSError *MYMakeErrorV( int errorCode, NSString *domain, NSString *message
     NSDictionary *userInfo = [NSDictionary dictionaryWithObjectsAndKeys:
                                                       message, NSLocalizedDescriptionKey,
                                                       nil];
-    [message release];
     return [NSError errorWithDomain: domain
                                code: errorCode
                            userInfo: userInfo];
@@ -92,8 +91,7 @@ static NSString* printableOSType( OSType t ) {
     for (int i=0; i<4; i++)
         if (buf.ch[i] < 0x20 || buf.ch[i] > 0x7E)
             return nil;
-    return [[[NSString alloc] initWithBytes: &buf.ch length: 4 encoding: NSMacOSRomanStringEncoding]
-            autorelease];
+    return [[NSString alloc] initWithBytes: &buf.ch length: 4 encoding: NSMacOSRomanStringEncoding];
 }
 
 

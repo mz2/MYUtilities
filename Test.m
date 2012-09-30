@@ -46,37 +46,37 @@ static BOOL RunTestCase( struct TestCaseLink *test )
     struct TestCaseLink* prevTest = sCurrentTest;
     sCurrentTest = test;
 
-    NSAutoreleasePool *pool = [NSAutoreleasePool new];
-    Log(@"=== Testing %s ...",test->name);
-    @try{
-        sCurTestCaseExceptions = 0;
-        MYSetExceptionReporter(&TestCaseExceptionReporter);
-
-        test->testptr();    //SHAZAM!
-        
-        if( sCurTestCaseExceptions == 0 ) {
-            Log(@"√√√ %s passed\n\n",test->name);
-            test->passed = YES;
-            sPassed++;
-        } else {
-            Log(@"XXX FAILED test case '%s' due to %i exception(s) already reported above",
-                test->name,sCurTestCaseExceptions);
-            sFailed++;
-            RecordFailedTest(test);
+    @autoreleasepool {
+        Log(@"=== Testing %s ...",test->name);
+        @try{
+            sCurTestCaseExceptions = 0;
+            MYSetExceptionReporter(&TestCaseExceptionReporter);
+            
+            test->testptr();    //SHAZAM!
+            
+            if( sCurTestCaseExceptions == 0 ) {
+                Log(@"√√√ %s passed\n\n",test->name);
+                test->passed = YES;
+                sPassed++;
+            } else {
+                Log(@"XXX FAILED test case '%s' due to %i exception(s) already reported above",
+                    test->name,sCurTestCaseExceptions);
+                sFailed++;
+                RecordFailedTest(test);
+            }
+        }@catch( NSException *x ) {
+            if( [x.name isEqualToString: @"TestCaseSkipped"] )
+                Log(@"... skipping test %s since %@\n\n", test->name, x.reason);
+            else {
+                fflush(stderr);
+                Log(@"XXX FAILED test case '%s' due to:\nException: %@\n%@\n\n",
+                    test->name,x,x.my_callStack);
+                sFailed++;
+                RecordFailedTest(test);
+            }
+        }@finally{
+            test->testptr = NULL;       // prevents test from being run again
         }
-    }@catch( NSException *x ) {
-        if( [x.name isEqualToString: @"TestCaseSkipped"] )
-            Log(@"... skipping test %s since %@\n\n", test->name, x.reason);
-        else {
-            fflush(stderr);
-            Log(@"XXX FAILED test case '%s' due to:\nException: %@\n%@\n\n", 
-                  test->name,x,x.my_callStack);
-            sFailed++;
-            RecordFailedTest(test);
-        }
-    }@finally{
-        [pool drain];
-        test->testptr = NULL;       // prevents test from being run again
     }
     sCurrentTest = prevTest;
     gRunningTestCase = wasRunningTestCase;
@@ -136,22 +136,21 @@ void RunTestCases( int argc, const char **argv )
         }
     }
     if( sPassed>0 || sFailed>0 || stopAfterTests ) {
-        NSAutoreleasePool *pool = [NSAutoreleasePool new];
-        if( sFailed==0 )
-            AlwaysLog(@"√√√√√√ ALL %i TESTS PASSED √√√√√√", sPassed);
-        else {
-            Warn(@"****** %i of %i TESTS FAILED: %@ ******", 
-                 sFailed, sPassed+sFailed,
-                 [sFailedTestNames componentsJoinedByString: @", "]);
-            exit(1);
+        @autoreleasepool {
+            if( sFailed==0 )
+                AlwaysLog(@"√√√√√√ ALL %i TESTS PASSED √√√√√√", sPassed);
+            else {
+                Warn(@"****** %i of %i TESTS FAILED: %@ ******", 
+                     sFailed, sPassed+sFailed,
+                     [sFailedTestNames componentsJoinedByString: @", "]);
+                exit(1);
+            }
+            if( stopAfterTests ) {
+                Log(@"Stopping after tests ('Test_Only' arg detected)");
+                exit(0);
+            }
         }
-        if( stopAfterTests ) {
-            Log(@"Stopping after tests ('Test_Only' arg detected)");
-            exit(0);
-        }
-        [pool drain];
     }
-    [sFailedTestNames release];
     sFailedTestNames = nil;
 }
 
@@ -169,7 +168,7 @@ void _AssertFailed( id rcvr, const void *selOrFn, const char *sourceFile, int so
     if( message ) {
         va_list args;
         va_start(args,message);
-        message = [[[NSString alloc] initWithFormat: message arguments: args] autorelease];
+        message = [[NSString alloc] initWithFormat: message arguments: args];
         message = [@"Assertion failed: " stringByAppendingString: message];
         va_end(args);
     } else

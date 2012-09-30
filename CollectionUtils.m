@@ -42,6 +42,7 @@ NSMutableDictionary* _mdictof(const struct _dictpair* pairs, size_t count)
 }
 
 
+#if !__has_feature(objc_arc)
 NSArray* $apply( NSArray *src, SEL selector, id defaultValue )
 {
     NSMutableArray *dst = [NSMutableArray arrayWithCapacity: src.count];
@@ -51,6 +52,7 @@ NSArray* $apply( NSArray *src, SEL selector, id defaultValue )
     }
     return dst;
 }
+#endif
 
 NSArray* $applyKeyPath( NSArray *src, NSString *keyPath, id defaultValue )
 {
@@ -93,7 +95,7 @@ NSValue* _box(const void *value, const char *encoding)
         case 'f':   return [NSNumber numberWithFloat: *(float*)value];
         case 'd':   return [NSNumber numberWithDouble: *(double*)value];
         case '*':   return [NSString stringWithUTF8String: *(char**)value];
-        case '@':   return *(id*)value;
+        case '@':   return *(__autoreleasing id*)value;
         default:    return [NSValue value: value withObjCType: encoding];
     }
 }
@@ -144,16 +146,14 @@ NSArray* _castIfArrayOf(Class itemClass, NSArray *a)
 void setObj( id *var, id value )
 {
     if( value != *var ) {
-        [*var release];
-        *var = [value retain];
+        *var = value;
     }
 }
 
 BOOL ifSetObj( id *var, id value )
 {
     if( value != *var && ![value isEqual: *var] ) {
-        [*var release];
-        *var = [value retain];
+        *var = value;
         return YES;
     } else {
         return NO;
@@ -162,7 +162,6 @@ BOOL ifSetObj( id *var, id value )
 
 void setObjCopy( id *var, id valueToCopy ) {
     if( valueToCopy != *var ) {
-        [*var release];
         *var = [valueToCopy copy];
     }
 }
@@ -170,7 +169,6 @@ void setObjCopy( id *var, id valueToCopy ) {
 BOOL ifSetObjCopy( id *var, id value )
 {
     if( value != *var && ![value isEqual: *var] ) {
-        [*var release];
         *var = [value copy];
         return YES;
     } else {
@@ -192,8 +190,7 @@ BOOL kvSetObj( id owner, NSString *property, id *varPtr, id value )
 {
     if( *varPtr != value && ![*varPtr isEqual: value] ) {
         [owner willChangeValueForKey: property];
-        [*varPtr autorelease];
-        *varPtr = [value retain];
+        *varPtr = value;
         [owner didChangeValueForKey: property];
         return YES;
     } else {
@@ -206,7 +203,6 @@ BOOL kvSetObjCopy( id owner, NSString *property, id *varPtr, id value )
 {
     if( *varPtr != value && ![*varPtr isEqual: value] ) {
         [owner willChangeValueForKey: property];
-        [*varPtr autorelease];
         *varPtr = [value copy];
         [owner didChangeValueForKey: property];
         return YES;
@@ -245,7 +241,6 @@ BOOL kvAddToSet( id owner, NSString *property, NSMutableSet *set, id objToAdd ) 
         [owner didChangeValueForKey: property 
                     withSetMutation: NSKeyValueUnionSetMutation 
                        usingObjects: changedObjects]; 
-        [changedObjects release];
         return YES;
     } else
         return NO;
@@ -262,7 +257,6 @@ BOOL kvRemoveFromSet( id owner, NSString *property, NSMutableSet *set, id objToR
         [owner didChangeValueForKey: property 
                     withSetMutation: NSKeyValueMinusSetMutation 
                        usingObjects: changedObjects]; 
-        [changedObjects release];
         return YES;
     } else
         return NO;
@@ -284,6 +278,7 @@ BOOL kvRemoveFromSet( id owner, NSString *property, NSMutableSet *set, id objToR
     return [self indexOfObjectIdenticalTo: object] != NSNotFound;
 }
 
+#if !__has_feature(objc_arc)
 - (NSArray*) my_arrayByApplyingSelector: (SEL)selector
 {
     return [self my_arrayByApplyingSelector: selector withObject: nil];
@@ -298,20 +293,19 @@ BOOL kvRemoveFromSet( id owner, NSString *property, NSMutableSet *set, id objToR
     for( i=0; i<count; i++ )
         [temp addObject: [[self objectAtIndex: i] performSelector: selector withObject: object]];
     result = [NSArray arrayWithArray: temp];
-    [temp release];
     return result;
 }
+#endif
 
 #if NS_BLOCKS_AVAILABLE
 - (NSArray*) my_map: (id (^)(id obj))block {
     NSMutableArray* mapped = [[NSMutableArray alloc] initWithCapacity: self.count];
-    for (id obj in self) {
+    for (__strong id obj in self) {
         obj = block(obj);
         if (obj)
             [mapped addObject: obj];
     }
-    NSArray* result = [[mapped copy] autorelease];
-    [mapped release];
+    NSArray* result = [mapped copy];
     return result;
 }
 
@@ -321,8 +315,7 @@ BOOL kvRemoveFromSet( id owner, NSString *property, NSMutableSet *set, id objToR
         if (block(obj))
             [filtered addObject: obj];
     }
-    NSArray* result = [[filtered copy] autorelease];
-    [filtered release];
+    NSArray* result = [filtered copy];
     return result;
 }
 #endif
@@ -364,7 +357,7 @@ BOOL kvRemoveFromSet( id owner, NSString *property, NSMutableSet *set, id objToR
     else {
         NSMutableSet *result = [set1 mutableCopy];
         [result unionSet: set2];
-        return [result autorelease];
+        return result;
     }
 }
 
@@ -377,7 +370,7 @@ BOOL kvRemoveFromSet( id owner, NSString *property, NSMutableSet *set, id objToR
     else {
         NSMutableSet *result = [set1 mutableCopy];
         [result intersectSet: set2];
-        return [result autorelease];
+        return result;
     }
 }
 
@@ -390,7 +383,7 @@ BOOL kvRemoveFromSet( id owner, NSString *property, NSMutableSet *set, id objToR
     else {
         NSMutableSet *result = [set1 mutableCopy];
         [result minusSet: set2];
-        return [result autorelease];
+        return result;
     }
 }
 
@@ -429,7 +422,7 @@ BOOL kvRemoveFromSet( id owner, NSString *property, NSMutableSet *set, id objToR
             [updated setValue: nuValue forKey: key];
         }
     }];
-    return updated ? [updated autorelease] : self;
+    return updated ? updated : self;
 }
 #endif
 
@@ -439,7 +432,7 @@ BOOL kvRemoveFromSet( id owner, NSString *property, NSMutableSet *set, id objToR
 @implementation NSData (MYUtils)
 
 - (NSString*) my_UTF8ToString {
-    return [[[NSString alloc] initWithData: self encoding: NSUTF8StringEncoding] autorelease];
+    return [[NSString alloc] initWithData: self encoding: NSUTF8StringEncoding];
 }
 
 @end
@@ -458,18 +451,12 @@ BOOL kvRemoveFromSet( id owner, NSString *property, NSMutableSet *set, id objToR
 - (id) initWithEnumerator: (NSEnumerator*)enumerator filter: (id (^)(id obj))filter {
     self = [super init];
     if (self) {
-        _source = [enumerator retain];
+        _source = enumerator;
         _filter = [filter copy];
     }
     return self;
 }
 
-- (void)dealloc
-{
-    [_source release];
-    [_filter release];
-    [super dealloc];
-}
 
 - (id) nextObject {
     id obj;
@@ -487,7 +474,7 @@ BOOL kvRemoveFromSet( id owner, NSString *property, NSMutableSet *set, id objToR
 @implementation NSEnumerator (MYUtils)
 
 - (NSEnumerator*) my_map: (id (^)(id obj))block {
-    return [[[MYMappedEnumerator alloc] initWithEnumerator: self filter: block] autorelease];
+    return [[MYMappedEnumerator alloc] initWithEnumerator: self filter: block];
 }
 
 @end

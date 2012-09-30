@@ -28,7 +28,7 @@
 - (NSString*) my_pathAndQuery {
     CFStringRef path = CFURLCopyPath((CFURLRef)self);
     CFStringRef resource = CFURLCopyResourceSpecifier((CFURLRef)self);
-    NSString* result = [(id)path stringByAppendingString: (id)resource];
+    NSString* result = [(__bridge NSString *)path stringByAppendingString: (__bridge NSString *)resource];
     CFRelease(path);
     CFRelease(resource);
     return result;
@@ -40,12 +40,11 @@
 {
     NSString* protocol = self.my_isHTTPS ? NSURLProtectionSpaceHTTPS
                                          : NSURLProtectionSpaceHTTP;
-    return [[[NSURLProtectionSpace alloc] initWithHost: self.host
+    return [[NSURLProtectionSpace alloc] initWithHost: self.host
                                                   port: self.my_effectivePort
                                               protocol: protocol
                                                  realm: realm
-                                  authenticationMethod: authenticationMethod]
-            autorelease];
+                                  authenticationMethod: authenticationMethod];
 }
 
 
