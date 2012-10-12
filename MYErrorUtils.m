@@ -139,7 +139,8 @@ NSString* MYErrorName( NSString *domain, NSInteger code ) {
         // If it's an OSStatus, check whether CarbonCore knows its name:
         const char *name = NULL;
 #if !TARGET_OS_IPHONE
-        name = GetMacOSStatusErrorString((int)code);
+        name = [[NSError errorWithDomain:NSOSStatusErrorDomain code:(int)code userInfo:nil] UTF8String];
+;
 #endif
         if (name && *name)
             result = [NSString stringWithCString: name encoding: NSMacOSRomanStringEncoding];
