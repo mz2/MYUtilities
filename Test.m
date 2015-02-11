@@ -350,6 +350,10 @@ static BOOL CheckUncalledCoverage(void) {
     }
 }
 
+#else
+
+void _RequireTestCase( const char *name ) {}
+
 
 #endif // DEBUG
 

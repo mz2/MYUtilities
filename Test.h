@@ -49,11 +49,11 @@ extern BOOL gRunningTestCase;
 
 /** Can call this in a test case to indicate a prerequisite.
     The prerequisite test will be run first, and if it fails, the current test case will be skipped. */
+void _RequireTestCase( const char *name );
 #if DEBUG
 #define RequireTestCase(NAME)   _RequireTestCase(#NAME)
-void _RequireTestCase( const char *name );
 #else
-#define RequireTestCase(NAME)
+#define RequireTestCase(NAME)   {};
 #endif
 
 
