@@ -515,7 +515,7 @@ Class MYClassFromType(const char* propertyType) {
         return YES;
     }
     
-    if (propertyType &&! strncmp(propertyType, "\"@Protocol\"", 12) != 0) {
+    if (propertyType &&! (strncmp(propertyType, "\"@Protocol\"", 12) != 0)) {
         Warn(@"Dynamic property %@.%@ has type '%s' unsupported by %@", 
              self, key, propertyType, self);
     }
