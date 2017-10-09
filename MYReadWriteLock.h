@@ -37,9 +37,9 @@
 - (void) unlock;
 
 /** Convenience method that calls -lock, executes the block, then calls -unlock. */
-- (void) withLock: (void(^)())block;
+- (void) withLock: (void(^)(void))block;
 
 /** Convenience method that calls -lockForWriting, executes the block, then calls -unlock. */
-- (void) withWriteLock: (void(^)())block;
+- (void) withWriteLock: (void(^)(void))block;
 
 @end

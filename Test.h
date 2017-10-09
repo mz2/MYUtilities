@@ -60,7 +60,7 @@ void _RequireTestCase( const char *name );
 /** Schedules a block to run after the currently-running test case completes.
     This is useful for cleanup of resources created during a test.
     If this function is called multiple times, the blocks will be invoked in reverse order. */
-void AfterThisTest(void (^block)());
+void AfterThisTest(void (^block)(void));
 
 
 /** General-purpose assertions, replacing NSAssert etc.. You can use these outside test cases. */
@@ -135,9 +135,9 @@ NSString* WhyUnequalObjects(id a, id b);
 
 // Nasty internals ...
 #if DEBUG
-void _RunTestCase( void (*testptr)(), const char *name );
+void _RunTestCase( void (*testptr)(void), const char *name );
 
-struct TestCaseLink {void (*testptr)(); const char *name; BOOL passed; struct TestCaseLink *next;};
+struct TestCaseLink {void (*testptr)(void); const char *name; BOOL passed; struct TestCaseLink *next;};
 extern struct TestCaseLink *gAllTestCases;
 #endif // DEBUG
 void _AssertEqual(id val, id expected, const char* valExpr,

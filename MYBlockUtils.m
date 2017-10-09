@@ -19,20 +19,20 @@
 @implementation NSObject (MYBlockUtils)
 
 - (void) my_run_as_block {
-    ((void (^)())self)();
+    ((void (^)(void))self)();
 }
 
 @end
 
 
-void MYAfterDelay( NSTimeInterval delay, void (^block)() ) {
+void MYAfterDelay( NSTimeInterval delay, void (^block)(void) ) {
     block = [[block copy] autorelease];
     [block performSelector: @selector(my_run_as_block)
                 withObject: nil
                 afterDelay: delay];
 }
 
-id MYAfterDelayInModes( NSTimeInterval delay, NSArray* modes, void (^block)() ) {
+id MYAfterDelayInModes( NSTimeInterval delay, NSArray* modes, void (^block)(void) ) {
     block = [[block copy] autorelease];
     [block performSelector: @selector(my_run_as_block)
                 withObject: nil
@@ -48,7 +48,7 @@ void MYCancelAfterDelay( id block ) {
 }
 
 
-static void MYOnThreadWaiting( NSThread* thread, BOOL waitUntilDone, void (^block)()) {
+static void MYOnThreadWaiting( NSThread* thread, BOOL waitUntilDone, void (^block)(void)) {
     block = [block copy];
     [block performSelector: @selector(my_run_as_block)
                   onThread: thread
@@ -58,16 +58,16 @@ static void MYOnThreadWaiting( NSThread* thread, BOOL waitUntilDone, void (^bloc
 }
 
 
-void MYOnThread( NSThread* thread, void (^block)()) {
+void MYOnThread( NSThread* thread, void (^block)(void)) {
     MYOnThreadWaiting(thread, NO, block);
 }
 
-void MYOnThreadSynchronously( NSThread* thread, void (^block)()) {
+void MYOnThreadSynchronously( NSThread* thread, void (^block)(void)) {
     MYOnThreadWaiting(thread, YES, block);
 }
 
 
-void MYOnThreadInModes( NSThread* thread, NSArray* modes, BOOL waitUntilDone, void (^block)()) {
+void MYOnThreadInModes( NSThread* thread, NSArray* modes, BOOL waitUntilDone, void (^block)(void)) {
     block = [block copy];
     [block performSelector: @selector(my_run_as_block)
                   onThread: thread
@@ -78,7 +78,7 @@ void MYOnThreadInModes( NSThread* thread, NSArray* modes, BOOL waitUntilDone, vo
 }
 
 
-BOOL MYWaitFor( NSString* mode, BOOL (^block)() ) {
+BOOL MYWaitFor( NSString* mode, BOOL (^block)(void) ) {
     if (block())
         return YES;
 

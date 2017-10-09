@@ -71,7 +71,7 @@
     return YES;
 }
 
-- (void) withLock: (void(^)())block {
+- (void) withLock: (void(^)(void))block {
     [self lock];
     @try {
         block();
@@ -80,7 +80,7 @@
     }
 }
 
-- (void) withWriteLock: (void(^)())block {
+- (void) withWriteLock: (void(^)(void))block {
     [self lockForWriting];
     @try {
         block();

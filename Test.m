@@ -102,7 +102,7 @@ static BOOL RunTestCase( struct TestCaseLink *test )
         // Run any after-test blocks that were registered:
         NSArray* blocks = sAfterTestBlocks;
         sAfterTestBlocks = nil;
-        for (void (^block)() in blocks)
+        for (void (^block)(void) in blocks)
             block();
 
         if (!CheckCoverage(test->name)) {
@@ -143,7 +143,7 @@ static BOOL RunTestCase( struct TestCaseLink *test )
             ReportTestCase(test, failureType, reason);
         }
         // Run after-test blocks to clean up:
-        for (void (^block)() in sAfterTestBlocks)
+        for (void (^block)(void) in sAfterTestBlocks)
             block();
     }@finally{
         [pool drain];
